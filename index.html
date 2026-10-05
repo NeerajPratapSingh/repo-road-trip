@@ -15,13 +15,13 @@
   <!-- Start screen -->
   <div id="start" class="overlay">
     <div class="card">
-      <div class="logo">🍂 REPO VILLAGE</div>
-      <p class="sub">A cozy little town where every shop is one of your projects. Wander in and <span>chat</span> with them.</p>
+      <div class="logo">⛩️ REPO VILLAGE</div>
+      <p class="sub">A cozy village where every shop is one of your projects. Talk to the elder, then wander in and <span>visit</span> them.</p>
       <div class="row">
         <input id="username" type="text" placeholder="github username — e.g. torvalds" autocomplete="off" />
         <button id="startBtn">Enter the village</button>
       </div>
-      <div id="loading" class="loading">Opening the shops…</div>
+      <div id="loading" class="loading">Lighting the lanterns…</div>
       <div id="startError" class="error"></div>
       <p class="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk · <kbd>Esc</kbd> leave</p>
     </div>
@@ -30,7 +30,7 @@
   <!-- HUD proximity prompt -->
   <div id="prompt" class="prompt hidden"></div>
 
-  <!-- Chat panel -->
+  <!-- Panel (elder intro / shop chat + files) -->
   <div id="chat" class="chat hidden">
     <div class="chat-head">
       <div>
@@ -39,12 +39,22 @@
       </div>
       <button id="chatClose" title="Close (Esc)">✕</button>
     </div>
-    <div id="chatLog" class="chat-log"></div>
-    <div id="chatChips" class="chips"></div>
-    <div class="chat-input">
-      <input id="chatInput" type="text" placeholder="Ask this project anything…" autocomplete="off" />
-      <button id="chatSend">➤</button>
+
+    <div id="chatTabs" class="tabs hidden">
+      <button id="tabChat" class="tab active">💬 Chat</button>
+      <button id="tabFiles" class="tab">📁 Files</button>
     </div>
+
+    <div id="chatView">
+      <div id="chatLog" class="chat-log"></div>
+      <div id="chatChips" class="chips"></div>
+      <div id="chatInputRow" class="chat-input">
+        <input id="chatInput" type="text" placeholder="Ask this project anything…" autocomplete="off" />
+        <button id="chatSend">➤</button>
+      </div>
+    </div>
+
+    <div id="filesView" class="files-view hidden"></div>
   </div>
 
   <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>

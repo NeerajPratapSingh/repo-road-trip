@@ -1,5 +1,6 @@
-// game2d.js — Repo Village: a cozy top-down town where each shop is a repo.
-import { fetchGitHubData, colorForLanguage } from "./github.js";
+// game2d.js — Repo Village: a cozy Japanese-style town. Each shop is a repo;
+// a village elder introduces the owner; visit a shop to chat or browse its files.
+import { fetchGitHubData, colorForLanguage, fetchRepoContents, fetchFileText } from "./github.js";
 
 /* ------------------------------------------------------------------ */
 /*  Start screen                                                       */
@@ -14,6 +15,9 @@ const loading = el("loading");
 startBtn.addEventListener("click", start);
 usernameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
 
+let OWNER = "";
+let PROFILE = null;
+
 async function start() {
   const username = usernameInput.value.trim();
   if (!username) return;
@@ -23,6 +27,8 @@ async function start() {
   try {
     const data = await fetchGitHubData(username);
     if (!data.repos.length) throw new Error("No public (non-fork) repos found for this user.");
+    OWNER = data.profile.login;
+    PROFILE = data.profile;
     startScreen.style.display = "none";
     await initGame(data);
   } catch (err) {
@@ -33,9 +39,8 @@ async function start() {
   }
 }
 
-/* Render an emoji into a data URL so KAPLAY can load it as a sprite
-   (KAPLAY's text renderer doesn't do colour emoji reliably). */
-function emojiURL(emoji, size = 128) {
+/* Emoji → data URL so KAPLAY can load it as a (chunky, pixel-ish) sprite. */
+function emojiURL(emoji, size = 64) {
   const c = document.createElement("canvas");
   c.width = c.height = size;
   const ctx = c.getContext("2d");
@@ -46,7 +51,7 @@ function emojiURL(emoji, size = 128) {
   return c.toDataURL();
 }
 
-const NPC_EMOJI = ["🐧", "🐨", "🐱", "🦊", "🐸", "🐼", "🐹", "🐻"];
+const NPC_EMOJI = ["🐧", "🐨", "🐱", "🦊", "🐸", "🐼"];
 
 /* ------------------------------------------------------------------ */
 /*  Village                                                            */
@@ -58,135 +63,129 @@ async function initGame(data) {
   kaplay({
     global: true,
     canvas: el("game"),
-    background: [150, 171, 97], // grass
-    pixelDensity: Math.min(window.devicePixelRatio || 1, 2),
+    background: [120, 150, 92], // mossy grass
+    crisp: true,                // pixel-ish, no smoothing
+    pixelDensity: 1,
   });
 
-  // Preload emoji sprites
-  const npcSet = NPC_EMOJI.slice(0, 6);
   await Promise.all([
     loadSprite("hero", emojiURL("🐰")),
-    loadSprite("tree", emojiURL("🌳")),
+    loadSprite("elder", emojiURL("🧓")),
+    loadSprite("torii", emojiURL("⛩️")),
+    loadSprite("lantern", emojiURL("🏮")),
+    loadSprite("tree", emojiURL("🌲")),
     loadSprite("maple", emojiURL("🍁")),
-    loadSprite("bush", emojiURL("🌿")),
-    loadSprite("lamp", emojiURL("🏮")),
-    ...npcSet.map((e, i) => loadSprite("npc" + i, emojiURL(e))),
+    loadSprite("bush", emojiURL("🌸")),
+    ...NPC_EMOJI.map((e, i) => loadSprite("npc" + i, emojiURL(e))),
   ]);
 
-  // --- Layout
-  const COLS = 3;
+  // --- Layout: a vertical main street, shops alternating on each side
   const n = data.repos.length;
-  const rows = Math.ceil(n / COLS);
-  const SX = 250, SY = 270;
-  const gridW = COLS * SX, gridH = rows * SY;
-  const WORLD_W = gridW + 360;
-  const WORLD_H = gridH + 560;
-  const startX = (WORLD_W - gridW) / 2 + SX / 2;
-  const startY = 200 + SY / 2;
+  const WORLD_W = 1000;
+  const CX = WORLD_W / 2;
+  const SIDE = 240;
+  const SY = 215;
+  const TOP = 300;
+  const WORLD_H = TOP + n * SY + 340;
 
   const COL = {
-    plaza: rgb(226, 206, 160),
-    plazaEdge: rgb(205, 183, 134),
-    wall: rgb(250, 241, 222),
-    roof: rgb(179, 83, 60),
-    roofDark: rgb(150, 66, 47),
-    window: rgb(255, 211, 120),
-    door: rgb(110, 74, 48),
+    street: rgb(222, 205, 168),
+    streetEdge: rgb(198, 178, 136),
+    paper: rgb(246, 240, 226),
+    wood: rgb(92, 62, 42),
+    roof: rgb(86, 80, 102),
+    roofDark: rgb(62, 57, 78),
+    window: rgb(255, 212, 128),
+    door: rgb(74, 48, 32),
     sign: rgb(150, 100, 60),
     ink: rgb(74, 54, 39),
-    shadow: rgb(70, 60, 40),
+    shadow: rgb(50, 44, 30),
   };
 
-  // --- Plaza (town square)
-  add([
-    rect(gridW + 220, gridH + 220, { radius: 40 }),
-    pos(WORLD_W / 2, 120 + (gridH + 220) / 2),
-    anchor("top"),
-    color(COL.plaza),
-    outline(10, COL.plazaEdge),
-    z(0),
-  ]);
-  // a path down to the entrance
-  add([
-    rect(120, 340, { radius: 20 }),
-    pos(WORLD_W / 2, 120 + gridH + 120),
-    anchor("top"),
-    color(COL.plaza),
-    z(0),
-  ]);
+  // --- Main street (vertical) + grass borders
+  add([rect(160, WORLD_H - 180, { radius: 30 }), pos(CX, 150), anchor("top"), color(COL.street), outline(8, COL.streetEdge), z(0)]);
 
-  // --- Border trees + autumn leaves
-  for (let x = 40; x < WORLD_W; x += 95) {
-    addDecor("tree", x, 50, 0.9);
-    addDecor("tree", x, WORLD_H - 40, 0.9);
+  // Border trees
+  for (let y = 130; y < WORLD_H - 40; y += 90) {
+    add([sprite("tree"), pos(70, y), anchor("center"), scale(1.1), z(y)]);
+    add([sprite("tree"), pos(WORLD_W - 70, y), anchor("center"), scale(1.1), z(y)]);
   }
-  for (let y = 120; y < WORLD_H - 60; y += 95) {
-    addDecor("tree", 40, y, 0.9);
-    addDecor("tree", WORLD_W - 40, y, 0.9);
-  }
-  for (let i = 0; i < 26; i++) {
-    addDecor(Math.random() < 0.5 ? "maple" : "bush", rand(70, WORLD_W - 70), rand(90, WORLD_H - 70), rand(0.4, 0.6));
+  for (let i = 0; i < 24; i++) {
+    const spr = Math.random() < 0.5 ? "maple" : "bush";
+    add([sprite(spr), pos(rand(110, WORLD_W - 110), rand(180, WORLD_H - 90)), anchor("center"), scale(rand(0.5, 0.75)), z(99999)]);
   }
 
-  function addDecor(spr, x, y, sc) {
-    add([sprite(spr), pos(x, y), anchor("center"), scale(sc), z(y)]);
-  }
+  // --- Torii gate at the top of the street
+  add([sprite("torii"), pos(CX, 150), anchor("center"), scale(2.4), z(160)]);
 
-  // --- Shops (one per repo)
+  // --- Shops
   const doors = [];
   data.repos.forEach((repo, i) => {
-    const col = i % COLS, row = Math.floor(i / COLS);
-    const x = startX + col * SX;
-    const y = startY + row * SY;
+    const side = i % 2 === 0 ? 1 : -1;
+    const x = CX + side * SIDE + rand(-15, 15);
+    const y = TOP + i * SY + rand(-10, 10);
     const [r, g, b] = colorForLanguage(repo.language);
     const awning = rgb(r, g, b);
-    const WALL_W = 150, WALL_H = 110;
+    const WW = 150, WH = 100;
+
+    // little lane from the street to the shop
+    add([rect(SIDE, 40, { radius: 16 }), pos(CX + side * SIDE / 2, y + 36), anchor("center"), color(COL.street), z(0.1)]);
 
     // shadow
-    add([circle(70), scale(1, 0.32), pos(x, y + 70), anchor("center"), color(COL.shadow), opacity(0.18), z(y - 1)]);
-    // wall
-    add([rect(WALL_W, WALL_H, { radius: 8 }), pos(x, y), anchor("center"), color(COL.wall), outline(4, COL.roofDark), z(y)]);
-    // roof
-    add([rect(WALL_W + 16, 30, { radius: 8 }), pos(x, y - WALL_H / 2 - 6), anchor("center"), color(COL.roof), outline(4, COL.roofDark), z(y)]);
-    // awning stripe (language colour)
-    add([rect(WALL_W, 14), pos(x, y - WALL_H / 2 + 14), anchor("center"), color(awning), z(y + 0.1)]);
+    add([circle(74), scale(1, 0.3), pos(x, y + 66), anchor("center"), color(COL.shadow), opacity(0.18), z(y - 1)]);
+    // wall (paper + dark wood frame)
+    add([rect(WW, WH, { radius: 6 }), pos(x, y), anchor("center"), color(COL.paper), outline(5, COL.wood), z(y)]);
+    // pagoda roof (trapezoid) + ridge + upturned eave tips
+    const W = WW / 2 + 22;
+    add([polygon([vec2(-W, 8), vec2(W, 8), vec2(W - 26, -22), vec2(-(W - 26), -22)]), pos(x, y - WH / 2), color(COL.roof), outline(4, COL.roofDark), z(y + 0.4)]);
+    add([polygon([vec2(-W, 8), vec2(-W - 12, 0), vec2(-W + 8, -4)]), pos(x, y - WH / 2), color(COL.roof), z(y + 0.4)]);
+    add([polygon([vec2(W, 8), vec2(W + 12, 0), vec2(W - 8, -4)]), pos(x, y - WH / 2), color(COL.roof), z(y + 0.4)]);
+    add([rect(66, 12, { radius: 3 }), pos(x, y - WH / 2 - 24), anchor("center"), color(COL.roofDark), z(y + 0.5)]);
     // windows
-    add([rect(34, 30, { radius: 5 }), pos(x - 36, y - 8), anchor("center"), color(COL.window), outline(4, COL.door), z(y + 0.1)]);
-    add([rect(34, 30, { radius: 5 }), pos(x + 36, y - 8), anchor("center"), color(COL.window), outline(4, COL.door), z(y + 0.1)]);
+    add([rect(32, 28, { radius: 4 }), pos(x - 38, y - 6), anchor("center"), color(COL.window), outline(4, COL.wood), z(y + 0.2)]);
+    add([rect(32, 28, { radius: 4 }), pos(x + 38, y - 6), anchor("center"), color(COL.window), outline(4, COL.wood), z(y + 0.2)]);
+    // noren curtain (language colour) over the door
+    add([rect(50, 20), pos(x, y + 18), anchor("center"), color(awning), z(y + 0.3)]);
+    add([rect(3, 20), pos(x, y + 18), anchor("center"), color(COL.paper), z(y + 0.31)]);
+    add([rect(3, 20), pos(x - 14, y + 18), anchor("center"), color(COL.paper), z(y + 0.31)]);
+    add([rect(3, 20), pos(x + 14, y + 18), anchor("center"), color(COL.paper), z(y + 0.31)]);
     // door
-    add([rect(38, 50, { radius: 6 }), pos(x, y + WALL_H / 2 - 25), anchor("center"), color(COL.door), z(y + 0.1)]);
-    add([circle(3), pos(x + 10, y + WALL_H / 2 - 25), anchor("center"), color(COL.window), z(y + 0.2)]);
+    add([rect(40, 40, { radius: 4 }), pos(x, y + WH / 2 - 16), anchor("center"), color(COL.door), z(y + 0.2)]);
+    // hanging lanterns
+    add([sprite("lantern"), pos(x - 86, y - 20), anchor("center"), scale(0.55), z(y + 0.6)]);
+    add([sprite("lantern"), pos(x + 86, y - 20), anchor("center"), scale(0.55), z(y + 0.6)]);
+    // signboard
+    add([rect(176, 42, { radius: 10 }), pos(x, y + WH / 2 + 34), anchor("center"), color(COL.sign), outline(4, COL.roofDark), z(y + 0.3)]);
+    add([text(repo.name.length > 16 ? repo.name.slice(0, 15) + "…" : repo.name, { size: 16, width: 166, align: "center" }), pos(x, y + WH / 2 + 27), anchor("center"), color(rgb(255, 245, 225)), z(y + 0.4)]);
+    add([text(`★ ${repo.stars} · ${repo.language}`, { size: 11 }), pos(x, y + WH / 2 + 45), anchor("center"), color(rgb(235, 220, 190)), z(y + 0.4)]);
 
-    // hanging sign below the shop
-    add([rect(170, 44, { radius: 10 }), pos(x, y + WALL_H / 2 + 34), anchor("center"), color(COL.sign), outline(4, COL.roofDark), z(y + 0.1)]);
-    add([
-      text(repo.name.length > 16 ? repo.name.slice(0, 15) + "…" : repo.name, { size: 17, width: 160, align: "center" }),
-      pos(x, y + WALL_H / 2 + 27), anchor("center"), color(rgb(255, 245, 225)), z(y + 0.2),
-    ]);
-    add([
-      text(`★ ${repo.stars} · ${repo.language}`, { size: 12 }),
-      pos(x, y + WALL_H / 2 + 45), anchor("center"), color(rgb(235, 220, 190)), z(y + 0.2),
-    ]);
-
-    doors.push({ pos: vec2(x, y + WALL_H / 2 + 20), repo });
+    doors.push({ type: "shop", pos: vec2(x, y + WH / 2 + 18), repo });
   });
 
-  // --- A few villager NPCs sitting around for life
-  for (let i = 0; i < 6; i++) {
-    const nx = rand(startX - 60, startX + (COLS - 1) * SX + 60);
-    const ny = rand(startY + 90, startY + (rows - 1) * SY + 150);
-    add([sprite("npc" + (i % npcSet.length)), pos(nx, ny), anchor("center"), scale(0.42), z(ny)]);
+  // --- Villager NPCs dotted along the street
+  for (let i = 0; i < Math.min(n + 2, 8); i++) {
+    const sx = CX + rand(-60, 60);
+    const sy = TOP + rand(40, (n - 1) * SY + 120);
+    add([sprite("npc" + (i % NPC_EMOJI.length)), pos(sx, sy), anchor("center"), scale(0.5), z(sy)]);
   }
 
-  // --- Entrance sign: REPO VILLAGE
-  add([rect(260, 60, { radius: 12 }), pos(WORLD_W / 2, WORLD_H - 70), anchor("center"), color(COL.sign), outline(5, COL.roofDark), z(WORLD_H)]);
-  add([text("REPO VILLAGE", { size: 24 }), pos(WORLD_W / 2, WORLD_H - 70), anchor("center"), color(rgb(255, 245, 225)), z(WORLD_H + 1)]);
+  // --- Village elder near the entrance
+  const elderPos = vec2(CX + 110, WORLD_H - 220);
+  add([circle(26), scale(1, 0.4), pos(elderPos.x, elderPos.y + 22), anchor("center"), color(COL.shadow), opacity(0.2), z(elderPos.y - 1)]);
+  add([sprite("elder"), pos(elderPos.x, elderPos.y), anchor("center"), scale(0.62), z(elderPos.y)]);
+  add([rect(150, 34, { radius: 8 }), pos(elderPos.x, elderPos.y - 42), anchor("center"), color(COL.sign), outline(3, COL.roofDark), z(elderPos.y + 1)]);
+  add([text("Village Elder", { size: 13 }), pos(elderPos.x, elderPos.y - 42), anchor("center"), color(rgb(255, 245, 225)), z(elderPos.y + 2)]);
+  const spots = [...doors, { type: "elder", pos: elderPos }];
+
+  // --- Entrance sign
+  add([rect(260, 56, { radius: 12 }), pos(CX, WORLD_H - 80), anchor("center"), color(COL.sign), outline(5, COL.roofDark), z(WORLD_H)]);
+  add([text("REPO VILLAGE", { size: 22 }), pos(CX, WORLD_H - 80), anchor("center"), color(rgb(255, 245, 225)), z(WORLD_H + 1)]);
 
   // --- Hero
-  const shadow = add([circle(26), scale(1, 0.4), pos(WORLD_W / 2, WORLD_H - 150), anchor("center"), color(COL.shadow), opacity(0.22), z(1)]);
-  const hero = add([sprite("hero"), pos(WORLD_W / 2, WORLD_H - 160), anchor("center"), scale(0.48), z(1000)]);
+  const shadow = add([circle(24), scale(1, 0.4), pos(CX, WORLD_H - 128), anchor("center"), color(COL.shadow), opacity(0.22), z(1)]);
+  const hero = add([sprite("hero"), pos(CX, WORLD_H - 140), anchor("center"), scale(0.6), z(1000)]);
 
-  const SPEED = 230;
+  const SPEED = 235;
   onUpdate(() => {
     if (!paused) {
       let dir = vec2(0, 0);
@@ -197,33 +196,35 @@ async function initGame(data) {
       if (dir.len() > 0) {
         dir = dir.unit();
         hero.pos = hero.pos.add(dir.scale(SPEED * dt()));
-        hero.pos.x = Math.max(60, Math.min(WORLD_W - 60, hero.pos.x));
-        hero.pos.y = Math.max(140, Math.min(WORLD_H - 90, hero.pos.y));
-        // little walk bob
-        hero.scale = vec2(0.48, 0.48 + Math.sin(time() * 14) * 0.03);
+        hero.pos.x = Math.max(55, Math.min(WORLD_W - 55, hero.pos.x));
+        hero.pos.y = Math.max(130, Math.min(WORLD_H - 70, hero.pos.y));
+        hero.scale = vec2(0.6, 0.6 + Math.sin(time() * 14) * 0.04);
       }
     }
     hero.z = hero.pos.y + 1;
-    shadow.pos = vec2(hero.pos.x, hero.pos.y + 22);
+    shadow.pos = vec2(hero.pos.x, hero.pos.y + 20);
 
-    // camera follows, clamped to the world
+    // camera: follow, but centre the world when it's smaller than the screen
     const hw = width() / 2, hh = height() / 2;
-    camPos(
-      Math.max(hw, Math.min(WORLD_W - hw, hero.pos.x)),
-      Math.max(hh, Math.min(WORLD_H - hh, hero.pos.y))
-    );
+    const cx = WORLD_W <= width() ? WORLD_W / 2 : Math.max(hw, Math.min(WORLD_W - hw, hero.pos.x));
+    const cy = WORLD_H <= height() ? WORLD_H / 2 : Math.max(hh, Math.min(WORLD_H - hh, hero.pos.y));
+    camPos(cx, cy);
 
-    // nearest door
-    let near = null, best = 95;
-    for (const d of doors) {
-      const dist = hero.pos.dist(d.pos);
-      if (dist < best) { best = dist; near = d; }
+    // nearest talkable
+    let near = null, best = 100;
+    for (const s of spots) {
+      const d = hero.pos.dist(s.pos);
+      if (d < best) { best = d; near = s; }
     }
     currentNear = near;
     updatePrompt(near);
   });
 
-  onKeyPress("e", () => { if (!paused && currentNear) openChat(currentNear.repo); });
+  onKeyPress("e", () => {
+    if (paused || !currentNear) return;
+    if (currentNear.type === "elder") openElder();
+    else openShop(currentNear.repo);
+  });
   onKeyPress("escape", () => { if (paused) closeChat(); });
 }
 
@@ -233,12 +234,14 @@ async function initGame(data) {
 const promptEl = el("prompt");
 function updatePrompt(near) {
   if (paused || !near) { promptEl.classList.add("hidden"); return; }
-  promptEl.innerHTML = `Press <kbd>E</kbd> to visit <b>${escapeHtml(near.repo.name)}</b>`;
+  promptEl.innerHTML = near.type === "elder"
+    ? `Press <kbd>E</kbd> to talk to the <b>Village Elder</b>`
+    : `Press <kbd>E</kbd> to visit <b>${escapeHtml(near.repo.name)}</b>`;
   promptEl.classList.remove("hidden");
 }
 
 /* ------------------------------------------------------------------ */
-/*  Chat panel                                                         */
+/*  Panel: elder intro / shop chat + files                             */
 /* ------------------------------------------------------------------ */
 const chatEl = el("chat");
 const chatTitle = el("chatTitle");
@@ -246,8 +249,14 @@ const chatMeta = el("chatMeta");
 const chatLog = el("chatLog");
 const chatChips = el("chatChips");
 const chatInput = el("chatInput");
+const chatInputRow = el("chatInputRow");
 const chatSend = el("chatSend");
 const chatClose = el("chatClose");
+const chatTabs = el("chatTabs");
+const tabChat = el("tabChat");
+const tabFiles = el("tabFiles");
+const chatView = el("chatView");
+const filesView = el("filesView");
 
 let activeRepo = null;
 let history = [];
@@ -255,19 +264,66 @@ let history = [];
 chatSend.addEventListener("click", send);
 chatClose.addEventListener("click", closeChat);
 chatInput.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+tabChat.addEventListener("click", () => switchTab("chat"));
+tabFiles.addEventListener("click", () => switchTab("files"));
 
 const SUGGESTIONS = ["What do you do?", "Why are you useful?", "How were you built?", "What's the coolest part?"];
 
-function openChat(repo) {
+function switchTab(which) {
+  tabChat.classList.toggle("active", which === "chat");
+  tabFiles.classList.toggle("active", which === "files");
+  chatView.classList.toggle("hidden", which !== "chat");
+  filesView.classList.toggle("hidden", which !== "files");
+  if (which === "files" && activeRepo) showDir(activeRepo, "");
+}
+
+/* ---- Village elder (scripted from the GitHub profile) ---- */
+function openElder() {
+  paused = true;
+  activeRepo = null;
+  chatTitle.textContent = "Village Elder";
+  chatMeta.textContent = `keeper of @${OWNER}`;
+  chatTabs.classList.add("hidden");
+  filesView.classList.add("hidden");
+  chatView.classList.remove("hidden");
+  chatInputRow.classList.add("hidden");
+  chatLog.innerHTML = "";
+
+  addBubble("model", `Welcome, traveler. You've reached the village of ${PROFILE.name}. 🍵`);
+  if (PROFILE.bio) addBubble("model", `They say of the maker: “${PROFILE.bio}”`);
+  addBubble(
+    "model",
+    `${PROFILE.publicRepos} works line these streets${PROFILE.followers ? `, and ${PROFILE.followers} folk follow the maker` : ""}. Each shop is a project — walk up to a door and press E to step inside, chat with it, or browse its files.`
+  );
+
+  chatChips.innerHTML = "";
+  const elderQ = [
+    ["What should I visit first?", `Follow the lanterns up the main street. The shops nearest the gate are the most-starred — a fine place to begin.`],
+    ["Who built all this?", `${PROFILE.name} (@${OWNER}) — a builder of ${PROFILE.publicRepos} works. Wander, and see for yourself.`],
+  ];
+  elderQ.forEach(([q, a]) => {
+    const c = document.createElement("button");
+    c.className = "chip"; c.textContent = q;
+    c.addEventListener("click", () => { addBubble("user", q); addBubble("model", a); });
+    chatChips.appendChild(c);
+  });
+
+  chatEl.classList.remove("hidden");
+}
+
+/* ---- Shop (chat + files) ---- */
+function openShop(repo) {
   paused = true;
   activeRepo = repo;
   history = [];
   chatTitle.textContent = repo.name;
   chatMeta.textContent = `★ ${repo.stars} · ${repo.language}`;
+  chatTabs.classList.remove("hidden");
+  chatInputRow.classList.remove("hidden");
+  switchTab("chat");
   chatLog.innerHTML = "";
-  promptEl.classList.add("hidden");
 
-  addBubble("model", `Hey! I'm ${repo.name}. ${repo.description || "Come on in."} Ask me what I do, why I'm handy, or how I was built.`);
+  addBubble("model", `Hey! I'm ${repo.name}. ${repo.description || "Come on in."} Ask me what I do, why I'm handy, or how I was built — or hit 📁 Files to look around.`);
 
   chatChips.innerHTML = "";
   SUGGESTIONS.forEach((q) => {
@@ -287,6 +343,54 @@ function closeChat() {
   chatEl.classList.add("hidden");
 }
 
+/* ---- Files browser ---- */
+async function showDir(repo, path) {
+  filesView.innerHTML = `<div class="files-note">Loading…</div>`;
+  try {
+    const items = await fetchRepoContents(OWNER, repo.name, path);
+    const crumb = `<div class="crumb">${path ? `<button data-up="1">← back</button>` : ""}<span>${repo.name}/${path}</span></div>`;
+    const rows = items.map((it, i) => {
+      const icon = it.type === "dir" ? "📁" : "📄";
+      const size = it.type === "file" && it.size != null ? `<span class="fsize">${fmtSize(it.size)}</span>` : "";
+      return `<div class="file-row" data-i="${i}">${icon} <span class="fname">${escapeHtml(it.name)}</span>${size}</div>`;
+    }).join("");
+    filesView.innerHTML = crumb + (rows || `<div class="files-note">Empty folder.</div>`);
+
+    const up = filesView.querySelector("[data-up]");
+    if (up) up.addEventListener("click", () => showDir(repo, path.split("/").slice(0, -1).join("/")));
+    filesView.querySelectorAll(".file-row").forEach((rowEl) => {
+      const it = items[+rowEl.dataset.i];
+      rowEl.addEventListener("click", () => it.type === "dir" ? showDir(repo, it.path) : showFile(repo, it));
+    });
+  } catch (err) {
+    filesView.innerHTML = `<div class="files-note">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function showFile(repo, item) {
+  const parent = item.path.split("/").slice(0, -1).join("/");
+  if (!item.download_url || /\.(png|jpg|jpeg|gif|webp|ico|pdf|zip|exe|woff2?|ttf|mp4|mp3)$/i.test(item.name)) {
+    filesView.innerHTML = `<div class="crumb"><button data-up="1">← back</button><span>${escapeHtml(item.name)}</span></div><div class="files-note">(binary file — open it on GitHub)</div>`;
+    filesView.querySelector("[data-up]").addEventListener("click", () => showDir(repo, parent));
+    return;
+  }
+  filesView.innerHTML = `<div class="files-note">Opening ${escapeHtml(item.name)}…</div>`;
+  try {
+    const txt = await fetchFileText(item.download_url);
+    filesView.innerHTML = `<div class="crumb"><button data-up="1">← back</button><span>${escapeHtml(item.name)}</span></div><pre class="file-content">${escapeHtml(txt)}</pre>`;
+    filesView.querySelector("[data-up]").addEventListener("click", () => showDir(repo, parent));
+  } catch (err) {
+    filesView.innerHTML = `<div class="files-note">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1048576).toFixed(1) + " MB";
+}
+
+/* ---- Chat plumbing ---- */
 function addBubble(role, text) {
   const div = document.createElement("div");
   div.className = `msg ${role}`;

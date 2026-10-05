@@ -79,3 +79,21 @@ export function colorForLanguage(lang) {
   };
   return map[lang] || [120, 170, 200];
 }
+
+/* List a repo's files/folders at a given path (top level by default). */
+export async function fetchRepoContents(owner, repo, path = "") {
+  const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`);
+  if (!r.ok) throw new Error(`Couldn't load files (${r.status}).`);
+  const d = await r.json();
+  const list = Array.isArray(d) ? d : [d];
+  return list
+    .map((x) => ({ name: x.name, type: x.type, path: x.path, download_url: x.download_url, size: x.size }))
+    .sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "dir" ? -1 : 1));
+}
+
+/* Fetch a text file's contents (truncated). */
+export async function fetchFileText(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Couldn't open that file.");
+  return (await r.text()).slice(0, 20000);
+}
