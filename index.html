@@ -3,39 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GitHub City</title>
+  <title>Repo Village</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
 
-  <!-- HUD -->
-  <div id="hud" class="hud hidden">
-    <div class="hud-title"><span id="hudOwner">@user</span>'s City</div>
-    <div class="hud-sub" id="hudSub"></div>
-  </div>
-  <div id="legend" class="legend hidden"></div>
-  <div id="hint" class="hint-bar hidden">drag to orbit · scroll to zoom · <b>click a tower</b></div>
-  <div id="tooltip" class="tooltip hidden"></div>
-
-  <!-- Start screen -->
   <div id="start" class="overlay">
     <div class="card">
-      <div class="logo">▞ GITHUB CITY</div>
-      <p class="sub">Every repo becomes a tower in a neon skyline — the more stars, the taller it stands. Fly through and <span>click a building</span> to look inside.</p>
+      <div class="logo">⛩ REPO VILLAGE</div>
+      <p class="sub">A cozy pixel town where every shop is one of your projects. Meet the elder, then wander in and <span>visit</span> them.</p>
       <div class="row">
         <input id="username" type="text" placeholder="github username — e.g. torvalds" autocomplete="off" />
-        <button id="startBtn">Build the city</button>
+        <button id="startBtn">Enter the village</button>
       </div>
-      <div id="loading" class="loading">Raising the skyline…</div>
+      <div id="loading" class="loading">Painting the village…</div>
       <div id="startError" class="error"></div>
+      <p class="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk · <kbd>Esc</kbd> leave</p>
     </div>
   </div>
 
-  <!-- Building panel: chat + files -->
+  <div id="prompt" class="prompt hidden"></div>
+
   <div id="chat" class="chat hidden">
     <div class="chat-head">
       <div>
@@ -44,7 +36,7 @@
       </div>
       <button id="chatClose" title="Close (Esc)">✕</button>
     </div>
-    <div id="chatTabs" class="tabs">
+    <div id="chatTabs" class="tabs hidden">
       <button id="tabChat" class="tab active">💬 Chat</button>
       <button id="tabFiles" class="tab">📁 Files</button>
     </div>
@@ -59,14 +51,7 @@
     <div id="filesView" class="files-view hidden"></div>
   </div>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-      }
-    }
-  </script>
-  <script type="module" src="city.js"></script>
+  <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
+  <script type="module" src="pixelgame.js"></script>
 </body>
 </html>
