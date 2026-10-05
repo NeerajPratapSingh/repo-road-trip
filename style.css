@@ -134,4 +134,25 @@ kbd {
 .chat-input { display: flex; gap: 8px; padding: 16px 18px; border-top: 1px solid var(--glass-brd); }
 .chat-input button { padding: 0 18px; }
 
+/* ---- Cinematic overlays ---- */
+#vignette {
+  position: fixed; inset: 0; z-index: 10; pointer-events: none;
+  background: radial-gradient(130% 110% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+#scanlines {
+  position: fixed; inset: 0; z-index: 11; pointer-events: none; opacity: .35;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.12) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+/* ---- Speedometer ---- */
+.speedo {
+  position: fixed; right: 26px; bottom: 26px; z-index: 14; pointer-events: none;
+  display: flex; align-items: baseline; gap: 5px;
+  font-family: var(--display); color: var(--ink);
+  text-shadow: 0 0 14px rgba(77,212,255,.6);
+}
+.speedo #speedVal { font-size: 42px; font-weight: 700; letter-spacing: 1px; }
+.speedo small { font-size: 14px; color: var(--muted); }
+
 .hidden { display: none !important; }

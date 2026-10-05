@@ -12,18 +12,27 @@
 <body>
   <canvas id="game"></canvas>
 
+  <!-- Cinematic overlays -->
+  <div id="vignette"></div>
+  <div id="scanlines"></div>
+
+  <!-- Speedometer HUD -->
+  <div id="speedo" class="speedo hidden">
+    <span id="speedVal">0</span><small>km/h</small>
+  </div>
+
   <!-- Start screen -->
   <div id="start" class="overlay">
     <div class="card">
       <div class="logo">◹ REPO ROAD TRIP</div>
-      <p class="sub">Drive through a GitHub profile in 3D. Every repo is a building you can pull up to and <span>chat with</span>.</p>
+      <p class="sub">Cruise a GitHub profile in first person. Every repo is a roadside stop you can pull over to and <span>chat with</span>.</p>
       <div class="row">
         <input id="username" type="text" placeholder="github username — e.g. torvalds" autocomplete="off" />
-        <button id="startBtn">Drive in</button>
+        <button id="startBtn">Start engine</button>
       </div>
-      <div id="loading" class="loading">Building the city…</div>
+      <div id="loading" class="loading">Paving the road…</div>
       <div id="startError" class="error"></div>
-      <p class="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>E</kbd> enter · <kbd>Esc</kbd> leave</p>
+      <p class="hint"><kbd>W</kbd> drive · <kbd>S</kbd> brake · <kbd>A</kbd><kbd>D</kbd> steer · <kbd>E</kbd> stop · <kbd>Esc</kbd> leave</p>
     </div>
   </div>
 
@@ -47,9 +56,14 @@
     </div>
   </div>
 
-  <!-- Three.js via import map -->
+  <!-- Three.js + post-processing addons -->
   <script type="importmap">
-    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
   </script>
   <script type="module" src="three-game.js"></script>
 </body>
