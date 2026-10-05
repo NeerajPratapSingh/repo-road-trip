@@ -4,24 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Repo Road Trip</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- The game renders here -->
   <canvas id="game"></canvas>
 
   <!-- Start screen -->
   <div id="start" class="overlay">
     <div class="card">
-      <h1>Repo Road Trip</h1>
-      <p class="sub">Drive through a GitHub profile. Every repo is a little shop you can pull up to and chat with.</p>
+      <div class="logo">◹ REPO ROAD TRIP</div>
+      <p class="sub">Drive through a GitHub profile in 3D. Every repo is a building you can pull up to and <span>chat with</span>.</p>
       <div class="row">
-        <input id="username" type="text" placeholder="github username (e.g. torvalds)" autocomplete="off" />
-        <button id="startBtn">Drive in →</button>
+        <input id="username" type="text" placeholder="github username — e.g. torvalds" autocomplete="off" />
+        <button id="startBtn">Drive in</button>
       </div>
-      <div id="loading" class="loading">Loading the town…</div>
+      <div id="loading" class="loading">Building the city…</div>
       <div id="startError" class="error"></div>
-      <p class="hint">Move: <b>WASD</b> / arrow keys &nbsp;·&nbsp; Enter a shop: <b>E</b> &nbsp;·&nbsp; Close: <b>Esc</b></p>
+      <p class="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>E</kbd> enter · <kbd>Esc</kbd> leave</p>
     </div>
   </div>
 
@@ -41,13 +43,14 @@
     <div id="chatChips" class="chips"></div>
     <div class="chat-input">
       <input id="chatInput" type="text" placeholder="Ask this project anything…" autocomplete="off" />
-      <button id="chatSend">Send</button>
+      <button id="chatSend">➤</button>
     </div>
   </div>
 
-  <!-- KAPLAY game engine (sets the global `kaplay`) -->
-  <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
-  <!-- Our game (module, so it can import github.js) -->
-  <script type="module" src="game.js"></script>
+  <!-- Three.js via import map -->
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+  <script type="module" src="three-game.js"></script>
 </body>
 </html>
