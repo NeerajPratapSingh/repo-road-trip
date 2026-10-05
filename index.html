@@ -3,36 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Repo Road Trip</title>
+  <title>Repo Village</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
 
-  <!-- Cinematic overlays -->
-  <div id="vignette"></div>
-  <div id="scanlines"></div>
-
-  <!-- Speedometer HUD -->
-  <div id="speedo" class="speedo hidden">
-    <span id="speedVal">0</span><small>km/h</small>
-  </div>
-
   <!-- Start screen -->
   <div id="start" class="overlay">
     <div class="card">
-      <div class="logo">◹ REPO ROAD TRIP</div>
-      <p class="sub">Cruise a GitHub profile in first person. Every repo is a roadside stop you can pull over to and <span>chat with</span>.</p>
+      <div class="logo">🍂 REPO VILLAGE</div>
+      <p class="sub">A cozy little town where every shop is one of your projects. Wander in and <span>chat</span> with them.</p>
       <div class="row">
         <input id="username" type="text" placeholder="github username — e.g. torvalds" autocomplete="off" />
-        <button id="startBtn">Start engine</button>
+        <button id="startBtn">Enter the village</button>
       </div>
-      <div id="loading" class="loading">Paving the road…</div>
+      <div id="loading" class="loading">Opening the shops…</div>
       <div id="startError" class="error"></div>
-      <p class="hint"><kbd>W</kbd> drive · <kbd>S</kbd> brake · <kbd>A</kbd><kbd>D</kbd> steer · <kbd>E</kbd> stop · <kbd>Esc</kbd> leave</p>
+      <p class="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk · <kbd>Esc</kbd> leave</p>
     </div>
   </div>
 
@@ -56,15 +47,7 @@
     </div>
   </div>
 
-  <!-- Three.js + post-processing addons -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-      }
-    }
-  </script>
-  <script type="module" src="three-game.js"></script>
+  <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
+  <script type="module" src="game2d.js"></script>
 </body>
 </html>
