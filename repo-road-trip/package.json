@@ -1,0 +1,10 @@
+{
+  "name": "repo-road-trip",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Drive through any GitHub profile — each repo is a chattable lofi shop.",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  }
+}

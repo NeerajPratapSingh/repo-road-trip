@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Repo Road Trip</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- The game renders here -->
+  <canvas id="game"></canvas>
+
+  <!-- Start screen -->
+  <div id="start" class="overlay">
+    <div class="card">
+      <h1>Repo Road Trip</h1>
+      <p class="sub">Drive through a GitHub profile. Every repo is a little shop you can pull up to and chat with.</p>
+      <div class="row">
+        <input id="username" type="text" placeholder="github username (e.g. torvalds)" autocomplete="off" />
+        <button id="startBtn">Drive in →</button>
+      </div>
+      <div id="loading" class="loading">Loading the town…</div>
+      <div id="startError" class="error"></div>
+      <p class="hint">Move: <b>WASD</b> / arrow keys &nbsp;·&nbsp; Enter a shop: <b>E</b> &nbsp;·&nbsp; Close: <b>Esc</b></p>
+    </div>
+  </div>
+
+  <!-- HUD proximity prompt -->
+  <div id="prompt" class="prompt hidden"></div>
+
+  <!-- Chat panel -->
+  <div id="chat" class="chat hidden">
+    <div class="chat-head">
+      <div>
+        <div id="chatTitle" class="chat-title">repo</div>
+        <div id="chatMeta" class="chat-meta"></div>
+      </div>
+      <button id="chatClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="chatLog" class="chat-log"></div>
+    <div id="chatChips" class="chips"></div>
+    <div class="chat-input">
+      <input id="chatInput" type="text" placeholder="Ask this project anything…" autocomplete="off" />
+      <button id="chatSend">Send</button>
+    </div>
+  </div>
+
+  <!-- KAPLAY game engine (sets the global `kaplay`) -->
+  <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>
+  <!-- Our game (module, so it can import github.js) -->
+  <script type="module" src="game.js"></script>
+</body>
+</html>
