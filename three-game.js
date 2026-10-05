@@ -57,11 +57,11 @@ function initGame(data) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 0.9;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x120a2a);
-  scene.fog = new THREE.Fog(0x241048, 80, 340);
+  scene.background = new THREE.Color(0x0a0616);
+  scene.fog = new THREE.Fog(0x0a0616, 60, 300);
 
   const BASE_FOV = 70;
   const camera = new THREE.PerspectiveCamera(BASE_FOV, innerWidth / innerHeight, 0.1, 2000);
@@ -73,13 +73,13 @@ function initGame(data) {
   /* ---- Post-processing (bloom) ---- */
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.9, 0.5, 0.82);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.38, 0.35, 0.92);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
   /* ---- Lights ---- */
-  scene.add(new THREE.HemisphereLight(0x9b8cff, 0x0e0820, 1.0));
-  const sun = new THREE.DirectionalLight(0xffb27a, 1.4);
+  scene.add(new THREE.HemisphereLight(0x8a7ce0, 0x0b0820, 0.55));
+  const sun = new THREE.DirectionalLight(0xffd0a0, 1.0);
   sun.position.set(-20, 50, ROAD_LEN);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -89,27 +89,27 @@ function initGame(data) {
   /* ---- Synthwave sun (striped disc on the horizon, dead ahead) ---- */
   const sunGroup = new THREE.Group();
   const disc = new THREE.Mesh(
-    new THREE.CircleGeometry(70, 64),
-    new THREE.MeshBasicMaterial({ color: 0xff5e8a })
+    new THREE.CircleGeometry(34, 64),
+    new THREE.MeshBasicMaterial({ color: 0xff7a55 })
   );
   sunGroup.add(disc);
-  // horizontal cutaway bands on the lower half
-  for (let i = 0; i < 7; i++) {
+  // horizontal cutaway bands on the lower half (match the sky so they "cut")
+  for (let i = 0; i < 6; i++) {
     const band = new THREE.Mesh(
-      new THREE.PlaneGeometry(150, 2 + i * 1.4),
-      new THREE.MeshBasicMaterial({ color: 0x120a2a })
+      new THREE.PlaneGeometry(80, 1.6 + i * 0.9),
+      new THREE.MeshBasicMaterial({ color: 0x0a0616 })
     );
-    band.position.set(0, -6 - i * 9, 0.1);
+    band.position.set(0, -4 - i * 5, 0.1);
     sunGroup.add(band);
   }
-  sunGroup.position.set(0, 34, ROAD_LEN + 90);
+  sunGroup.position.set(0, 30, ROAD_LEN + 160);
   scene.add(sunGroup);
   // soft glow halo behind the sun
   const halo = new THREE.Mesh(
-    new THREE.CircleGeometry(120, 64),
-    new THREE.MeshBasicMaterial({ color: 0xff3d7a, transparent: true, opacity: 0.25 })
+    new THREE.CircleGeometry(55, 64),
+    new THREE.MeshBasicMaterial({ color: 0xff3d7a, transparent: true, opacity: 0.12 })
   );
-  halo.position.set(0, 34, ROAD_LEN + 95);
+  halo.position.set(0, 30, ROAD_LEN + 165);
   scene.add(halo);
 
   /* ---- Starfield ---- */
@@ -140,21 +140,21 @@ function initGame(data) {
   /* ---- Ground + grid ---- */
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(1600, ROAD_LEN + 500),
-    new THREE.MeshStandardMaterial({ color: 0x160f33, roughness: 1 })
+    new THREE.MeshStandardMaterial({ color: 0x0d0a1e, roughness: 1 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.z = ROAD_LEN / 2;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const grid = new THREE.GridHelper(1600, 300, 0x5a3fb0, 0x2a1d58);
+  const grid = new THREE.GridHelper(1600, 300, 0x3a2d6b, 0x1c1540);
   grid.position.set(0, 0.02, ROAD_LEN / 2);
   scene.add(grid);
 
   /* ---- Road (glossy) ---- */
   const road = new THREE.Mesh(
     new THREE.PlaneGeometry(ROAD_W, ROAD_LEN + 300),
-    new THREE.MeshStandardMaterial({ color: 0x0d0a18, roughness: 0.22, metalness: 0.55 })
+    new THREE.MeshStandardMaterial({ color: 0x07060e, roughness: 0.3, metalness: 0.5 })
   );
   road.rotation.x = -Math.PI / 2;
   road.position.set(0, 0.03, ROAD_LEN / 2);
@@ -189,7 +189,7 @@ function initGame(data) {
       scene.add(pole);
       const lamp = new THREE.Mesh(
         new THREE.SphereGeometry(0.55, 12, 12),
-        new THREE.MeshStandardMaterial({ color: 0x4dd4ff, emissive: 0x4dd4ff, emissiveIntensity: 2.2 })
+        new THREE.MeshStandardMaterial({ color: 0x4dd4ff, emissive: 0x4dd4ff, emissiveIntensity: 1.0 })
       );
       lamp.position.set(s * (ROAD_W / 2 + 2.5), 9, z);
       scene.add(lamp);
@@ -216,7 +216,7 @@ function initGame(data) {
 
     const band = new THREE.Mesh(
       new THREE.BoxGeometry(15.6, 2.6, 15.6),
-      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4 })
+      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.6 })
     );
     band.position.set(x, h - 2.6, z);
     scene.add(band);
@@ -315,11 +315,11 @@ function initGame(data) {
     // Approach detection
     let near = null, best = 46;
     for (const s of shops) {
-      s.band.material.emissiveIntensity = 1.4;
+      s.band.material.emissiveIntensity = 0.6;
       const d = Math.abs(s.z - carPos.z);
       if (d < best) { best = d; near = s; }
     }
-    if (near) near.band.material.emissiveIntensity = 3.2;
+    if (near) near.band.material.emissiveIntensity = 1.6;
     currentNear = near ? { repo: near.repo, ahead: near.z - carPos.z } : null;
     updatePrompt(currentNear);
 
